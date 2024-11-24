@@ -49,10 +49,13 @@ Next we will setup a Trigger to run this script automatically on a schedule.
 
 2. Click on **Add Trigger**. Then fill out the options here.
 	1. See the values for "Choose which function to run" and "Choose which deployment should run" that I set up below - you should use the same. 
-	2. You can setup the script to run at a different time than me though - because the script looks for alerts in the past 3 days I have two triggers. One to run on Monday between 3-4 am and another to run on Thursday 3-4 am (you need to create multiple triggers if you want this to run multiple times a week).
+	2. You can setup the script to run at a different time than me though - because the script looks for alerts in the past 3 days I have two triggers. One to run on Monday between 3-4 am and another to run on Thursday 3-4 am (you need to create multiple triggers if you want this to run multiple times a week). Look at `mergeRecentScholarAlerts` and change `past_day_range` if you want to collate emails on a different schedule.
+
+3. Click *Save*. 
 
 Here is how my Monday trigger is setup.
 <p align="center">
   <img src="./screenshots/trigger-how-to.png" width="700" title="Setting up triggers to run the script automatically.">
 </p>
 
+Hope it works! If you run into problems please get in touch with me!
