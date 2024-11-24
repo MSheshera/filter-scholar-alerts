@@ -26,7 +26,7 @@ You need to set up this script as a Google Apps Script and set it up to run at a
 
 I recommend you do this the first time you set this up so that you can authenticate the App.
 
-1. Create a new script by going to script.google.com/create
+1. Create a new script by going to https://script.google.com/create
 
 2. Copy the code in `filter-scholar-alerts.js` into the script editor.
 
