@@ -6,10 +6,11 @@ I use this script to do two things:
 
 **Before:** My inbox before inundated with Google Scholar Alerts:
 <p align="center">
-  <img src="./screenshots/before.png" width="350" title="My inbox inundated with Google Scholar Alerts">
+  <img src="./screenshots/before-1.png" width="700" title="My inbox inundated with Google Scholar Alerts">
+  <img src="./screenshots/before-2.png" width="700" title="Each email contains the papers citing one subscribed author sometimes with duplication across subscribed authors.">
 </p>
 
 **After:** Emails de-duplicated and sorted into a regular digest that I will hopefully skim:
 <p align="center">
-  <img src="./screenshots/after.png" width="350" title="One email de-duplicating and sorting the papers in my alerts">
+  <img src="./screenshots/after.png" width="700" title="One email de-duplicating and sorting the papers in my alerts">
 </p>
