@@ -150,7 +150,7 @@ function collate_author_papers(authorname2parsed_papers){
 }
 
 /* Format the list of sorted paper dicts*/
-function format_citations_email(sorted_paper_dicts, skip_snippet_cites) {
+function format_citations_email(sorted_paper_dicts, skip_snippet_cites = false) {
     let formatted_papers = '<div style="font-family:arial,sans-serif;font-size:13px;line-height:16px;color:#222;width:100%;max-width:600px">\n';
     formatted_papers += '<h3 style="font-weight:lighter;font-size:18px;line-height:20px;"></h3>\n<h3 style="font-weight:normal;font-size:18px;line-height:20px;"></h3>'
     
@@ -205,13 +205,62 @@ function format_snippet_width(snippet, charsPerLine) {
     return formattedSnippet;
 }
 
+/*Given a batch of paper dicts, format and send them - this can be called from 
+batch_send_citation_email or mergeRecentScholarAlerts with no batching is needed*/
+function send_citation_email(batch_paper_dicts, total_citing_papers, total_authors, total_unique_papers, batch_idx=0){
+  var now = new Date();
+  var pretty_now = Utilities.formatDate(now, Session.getScriptTimeZone(), "EEE MMM dd yyyy");
+  var paper_body = format_citations_email(batch_paper_dicts)
+  var merged_citations_body = '';
+  merged_citations_body += '<html><body>';
+  merged_citations_body += '<!doctype html><html xmlns="http://www.w3.org/1999/xhtml" xmlns:o="urn:schemas-microsoft-com:office:office"><head><style>body{background-color:#fff}.gse_alrt_title{text-decoration:none}.gse_alrt_title:hover{text-decoration:underline} @media screen and (max-width: 599px) {.gse_alrt_sni br{display:none;}}</style></head>'
+  if (batch_idx == 0){ // If we are batching then batch_idx >= 1 and we will include it in the email.
+    merged_citations_body += `<h2>Collated ${total_citing_papers} citations to ${total_authors} authors into ${total_unique_papers} unique papers</h2>`;
+  } else {
+    merged_citations_body += `<h2>Collated ${total_citing_papers} citations to ${total_authors} authors into ${total_unique_papers} unique papers - Part ${batch_idx}, ${batch_paper_dicts.length}/${total_unique_papers}</h2>`;
+  }
+  merged_citations_body += paper_body
+  merged_citations_body += '</body></html>';
+  if (batch_idx == 0){ // If we are batching then batch_idx >= 1 and we will include it in the email.
+    var merged_subject = `Google Scholar Author Citations Digest for ${pretty_now}`;
+  } else {
+    var merged_subject = `Google Scholar Author Citations Digest for ${pretty_now} - Part ${batch_idx}`;
+  }
+  if (merged_citations_body !== '<html><body></body></html>') {
+    GmailApp.sendEmail(Session.getActiveUser().getEmail(), merged_subject, '', {
+      htmlBody: merged_citations_body
+    });
+    // GmailApp.sendEmail(Session.getActiveUser().getEmail(), merged_subject, mergedBody);
+    Logger.log('Merged email with recent alerts sent successfully.');
+  } else {
+    Logger.log('No matching emails found.');
+  }
+}
+
+/* Send the emails in parts of 200 or so else the script runs into a max email length limit*/
+function batch_send_citation_email(sorted_paper_dicts, total_citing_papers, total_authors, total_unique_papers, paper_per_email = 250){
+  var start = 0
+  var batch_idx = 1
+  while (start+paper_per_email < sorted_paper_dicts.length){
+    var batch_papers = sorted_paper_dicts.slice(start, start+paper_per_email)
+    send_citation_email(batch_papers, total_citing_papers, total_authors, total_unique_papers, batch_idx)
+    start += paper_per_email
+    batch_idx += 1
+  }
+  if (start < sorted_paper_dicts.length){ // handle the last batch
+    var batch_papers = sorted_paper_dicts.slice(start)
+    send_citation_email(batch_papers, total_citing_papers, total_authors, total_unique_papers, batch_idx)
+  }
+}
+
 function mergeRecentScholarAlerts() {
   // COnstruct a search query for emails from scholar alerts in the past 24 hours
-  var past_day_range = 1
+  var past_day_range = 3
+  var papers_per_merged_email = 200
   var senderEmail = 'scholaralerts-noreply@google.com';
   var now = new Date();
   var start_date = new Date(now);
-  start_date.setDate(now.getDate() - past_day_range); // Set to 24 hours ago
+  start_date.setDate(now.getDate() - past_day_range); // Set to past day range
   var formatted_startdate = Utilities.formatDate(start_date, Session.getScriptTimeZone(), "yyyy/MM/dd");
   var searchQuery = 'from:' + senderEmail + ' after:' + formatted_startdate;
 
@@ -221,7 +270,6 @@ function mergeRecentScholarAlerts() {
   // Go over the emails and get the papers across authors and merge them
   var author2parsed_papers = {}
   var total_citing_papers = 0
-  var unique_citing_papers = {}
   var merged_new_articles_body = ''
   var new_article_author_count = 0
   for (var i = 0; i < threads.length; i++) {
@@ -247,9 +295,10 @@ function mergeRecentScholarAlerts() {
           author2parsed_papers[author_name] = titles2parsed_paper_dict
         }
         total_citing_papers += Object.keys(titles2parsed_paper_dict).length
-        unique_citing_papers = Object.assign(unique_citing_papers, titles2parsed_paper_dict)
       }
-      else{ // After the above case is setup add code to handle people subscribed to authors and individual papers (just concat all the papers into one email)
+      // todo: Aggregate across authors for their new papers in case they have multiple new ones in a short time
+      // todo: Batch and send these as well; this will need these to be parsed into papers too
+      else{
         merged_new_articles_body += '<p>' + message.getSubject() + '</p>';
         message_body = message.getBody();
         merged_new_articles_body += '<div>' + message_body + '</div>';
@@ -259,35 +308,19 @@ function mergeRecentScholarAlerts() {
     }
   }
   
+  var pretty_now = Utilities.formatDate(now, Session.getScriptTimeZone(), "EEE MMM dd yyyy");
   // Count the number subscribed authors per paper and return it in sorted order
   sorted_paper_dicts = collate_author_papers(author2parsed_papers)
-  // The script runs into a max email length limit if skimming over multiple days so skip the snippet
-  total_unique_paper_count = Object.keys(unique_citing_papers).length
-  if (total_unique_paper_count > 200){
-    paper_body = format_citations_email(sorted_paper_dicts, true)
-  } else {
-    paper_body = format_citations_email(sorted_paper_dicts, false)
-  }
+  total_authors = Object.keys(author2parsed_papers).length
+  total_unique_papers = sorted_paper_dicts.length
 
-  // Create one merged body for the citations email.
-  var pretty_now = Utilities.formatDate(now, Session.getScriptTimeZone(), "EEE MMM dd yyyy");
-  var merged_citations_body = '';
-  merged_citations_body += '<html><body>';
-  merged_citations_body += '<!doctype html><html xmlns="http://www.w3.org/1999/xhtml" xmlns:o="urn:schemas-microsoft-com:office:office"><head><style>body{background-color:#fff}.gse_alrt_title{text-decoration:none}.gse_alrt_title:hover{text-decoration:underline} @media screen and (max-width: 599px) {.gse_alrt_sni br{display:none;}}</style></head>'
-  merged_citations_body += `<h2>Collated ${total_citing_papers} citations to ${Object.keys(author2parsed_papers).length} authors into ${sorted_paper_dicts.length}</h2>`;
-  merged_citations_body += paper_body
-  merged_citations_body += '</body></html>';
-  var merged_subject = `Google Scholar Author Citations Digest for ${pretty_now}`;
-  if (merged_citations_body !== '<html><body></body></html>') {
-    GmailApp.sendEmail(Session.getActiveUser().getEmail(), merged_subject, '', {
-      htmlBody: merged_citations_body
-    });
-    // GmailApp.sendEmail(Session.getActiveUser().getEmail(), merged_subject, mergedBody);
-    Logger.log('Merged email with recent alerts sent successfully.');
+  // If the number of papers is large then batch and send, else just send
+  if (total_unique_papers <= papers_per_merged_email){
+    send_citation_email(sorted_paper_dicts, total_citing_papers, total_authors, total_unique_papers, 0)
   } else {
-    Logger.log('No matching emails found.');
+    batch_send_citation_email(sorted_paper_dicts, total_citing_papers, total_authors, total_unique_papers, papers_per_merged_email)
   }
-
+  
   // Create one merged body for the new articles email.
   merged_new_articles_email = '<html><body>';
   merged_new_articles_email += `<h2>Collated new articles from ${new_article_author_count} authors</h2>`;
