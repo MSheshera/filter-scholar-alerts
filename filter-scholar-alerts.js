@@ -151,33 +151,37 @@ function collate_author_papers(authorname2parsed_papers){
 
 /* Format the list of sorted paper dicts*/
 function format_citations_email(sorted_paper_dicts) {
-    let formatted_papers = '';
+    let formatted_papers = '<div style="font-family:arial,sans-serif;font-size:13px;line-height:16px;color:#222;width:100%;max-width:600px">\n';
+    formatted_papers += '<h3 style="font-weight:lighter;font-size:18px;line-height:20px;"></h3>\n<h3 style="font-weight:normal;font-size:18px;line-height:20px;"></h3>'
     
     for (let i = 0; i < sorted_paper_dicts.length; i++) {
         const paper = sorted_paper_dicts[i];
         
-        formatted_papers += '<div class="paper">\n';
-        formatted_papers += `    <p><strong><a href="${paper.url}">${paper.title}</a></strong></p>\n`;
+        formatted_papers += `<h3 style="font-weight:normal;margin:0;font-size:17px;line-height:20px;"><a href=${paper.url} class="gse_alrt_title" style="font-size:17px;color:#1a0dab;line-height:22px">${paper.title}</a></h3>`;
         if (paper.metadata != ''){
-          formatted_papers += `    <p><i>${paper.metadata}</i></p>\n`;
+          formatted_papers += `<div style="color:#006621;line-height:18px">${paper.metadata}</div>`;
         }
-        formatted_snippet = format_snippet_width(paper.snippet, 120)
-        formatted_papers += `    <p>${formatted_snippet}</p>\n`;
-        formatted_papers += '    <ul>\n';
-        for (let j = 0; j < paper.cites.length; j++) {
-            formatted_papers += `        <li>${paper.cites[j]}</li>\n`;
+        formatted_snippet = format_snippet_width(paper.snippet, 100)
+        formatted_papers += `<div class="gse_alrt_sni" style="line-height:17px">${formatted_snippet}</div>`;
+        if (paper.cites.length != 0){
+          formatted_papers += '<table cellpadding="0" cellspacing="0" border="0" style="padding:8px 0>'
+          for (let j = 0; j < paper.cites.length; j++) {
+            var text_row = `<tr><td style="line-height:18px;font-size:12px;padding-right:8px;" valign="top">•</td><td style="line-height:18px;font-size:12px;mso-padding-alt:8px 0 4px 0;"><span style="mso-text-raise:4px;">${paper.cites[j]}</span></td></tr>`
+            formatted_papers += text_row
+          }
+          formatted_papers += '</table>'
         }
-        formatted_papers += '    </ul>\n';
-        formatted_papers += '</div>\n';
+        formatted_papers += '<br>';
     }
-    
+    formatted_papers += '</div>'
     return formatted_papers;
 }
 
+/*Truncate the snippet to charsPerLine*/
 function format_snippet_width(snippet, charsPerLine) {
     let formattedSnippet = '';
     let currentLine = '';
-    const words = snippet.split(' ');
+    const words = snippet.split(/\s+/);
     
     for (let i = 0; i < words.length; i++) {
         if (currentLine.length + words[i].length + 1 <= charsPerLine) {
@@ -210,15 +214,17 @@ function mergeRecentScholarAlerts() {
 
   // Go over the emails and get the papers across authors and merge them
   var mergedBody = '';
-
+  var pretty_now = Utilities.formatDate(now, Session.getScriptTimeZone(), "EEE MMM dd yyyy");
   mergedBody += '<html><body>';
-  mergedBody += `<h1>Google Scholar Alerts Digest for ${now}</h1>`;
+  mergedBody += '<!doctype html><html xmlns="http://www.w3.org/1999/xhtml" xmlns:o="urn:schemas-microsoft-com:office:office"><head><style>body{background-color:#fff}.gse_alrt_title{text-decoration:none}.gse_alrt_title:hover{text-decoration:underline} @media screen and (max-width: 599px) {.gse_alrt_sni br{display:none;}}</style></head>'
+  mergedBody += `<h1>Google Scholar Author Citations Digest for ${pretty_now}</h1>`;
   var author2parsed_papers = {}
   for (var i = 0; i < threads.length; i++) {
     var messages = threads[i].getMessages();
     for (var j = 0; j < messages.length; j++) {
       var message = messages[j];
       var subject = message.getSubject()
+      console.log(subject)
       // Only parse the papers 
       if (subject.includes('citations to articles')){
         message_body = message.getPlainBody(); // This is the plain text body
@@ -230,7 +236,6 @@ function mergeRecentScholarAlerts() {
       else{ // After the above case is setup add code to handle people subscribed to authors and individual papers (mostly just concat all the papers into one email)
         continue
       }
-      console.log(author_name)
       // mergedBody += '<h3>From: ' + message.getFrom() + '</h3>';
       // mergedBody += '<p>Date: ' + message.getDate() + '</p>';
       // mergedBody += '<p>Subject: ' + message.getSubject() + '</p>';
@@ -245,7 +250,7 @@ function mergeRecentScholarAlerts() {
   paper_body = format_citations_email(sorted_paper_dicts)
   mergedBody += paper_body
   mergedBody += '</body></html>';
-  var merged_subject = `Google Scholar Alerts: Authors Citations Digest for ${now}`;
+  var merged_subject = `Google Scholar Alerts: Authors Citations Digest for ${pretty_now}`;
   if (mergedBody !== '<html><body></body></html>') {
     GmailApp.sendEmail(Session.getActiveUser().getEmail(), merged_subject, '', {
       htmlBody: mergedBody
