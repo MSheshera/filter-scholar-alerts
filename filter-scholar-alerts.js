@@ -150,7 +150,7 @@ function collate_author_papers(authorname2parsed_papers){
 }
 
 /* Format the list of sorted paper dicts*/
-function format_citations_email(sorted_paper_dicts) {
+function format_citations_email(sorted_paper_dicts, skip_snippet_cites) {
     let formatted_papers = '<div style="font-family:arial,sans-serif;font-size:13px;line-height:16px;color:#222;width:100%;max-width:600px">\n';
     formatted_papers += '<h3 style="font-weight:lighter;font-size:18px;line-height:20px;"></h3>\n<h3 style="font-weight:normal;font-size:18px;line-height:20px;"></h3>'
     
@@ -161,13 +161,19 @@ function format_citations_email(sorted_paper_dicts) {
         if (paper.metadata != ''){
           formatted_papers += `<div style="color:#006621;line-height:18px">${paper.metadata}</div>`;
         }
-        formatted_snippet = format_snippet_width(paper.snippet, 100)
-        formatted_papers += `<div class="gse_alrt_sni" style="line-height:17px">${formatted_snippet}</div>`;
+        if (!skip_snippet_cites){  // The script runs into a max email length limit if collating over multiple days
+          formatted_snippet = format_snippet_width(paper.snippet, 100)
+          formatted_papers += `<div class="gse_alrt_sni" style="line-height:17px">${formatted_snippet}</div>`;
+        }
         if (paper.cites.length != 0){
           formatted_papers += '<table cellpadding="0" cellspacing="0" border="0" style="padding:8px 0>'
-          for (let j = 0; j < paper.cites.length; j++) {
-            var text_row = `<tr><td style="line-height:18px;font-size:12px;padding-right:8px;" valign="top">•</td><td style="line-height:18px;font-size:12px;mso-padding-alt:8px 0 4px 0;"><span style="mso-text-raise:4px;">${paper.cites[j]}</span></td></tr>`
-            formatted_papers += text_row
+          if (skip_snippet_cites){ // The script runs into a max email length limit if collating over multiple days
+            formatted_papers += `<tr><td style="line-height:18px;font-size:12px;padding-right:8px;" valign="top">•</td><td style="line-height:18px;font-size:12px;mso-padding-alt:8px 0 4px 0;"><span style="mso-text-raise:4px;">Cites: ${paper.cites.length} subscribed authors.</span></td></tr>`
+          } else {
+            for (let j = 0; j < paper.cites.length; j++) {            
+              var text_row = `<tr><td style="line-height:18px;font-size:12px;padding-right:8px;" valign="top">•</td><td style="line-height:18px;font-size:12px;mso-padding-alt:8px 0 4px 0;"><span style="mso-text-raise:4px;">${paper.cites[j]}</span></td></tr>`
+              formatted_papers += text_row
+            }
           }
           formatted_papers += '</table>'
         }
@@ -201,20 +207,21 @@ function format_snippet_width(snippet, charsPerLine) {
 
 function mergeRecentScholarAlerts() {
   // COnstruct a search query for emails from scholar alerts in the past 24 hours
+  var past_day_range = 1
   var senderEmail = 'scholaralerts-noreply@google.com';
   var now = new Date();
-  var yesterday = new Date(now);
-  yesterday.setDate(now.getDate() - 1); // Set to 24 hours ago
-  var formattedNow = Utilities.formatDate(now, Session.getScriptTimeZone(), "yyyy/MM/dd");
-  var formattedYesterday = Utilities.formatDate(yesterday, Session.getScriptTimeZone(), "yyyy/MM/dd");
-  var searchQuery = 'from:' + senderEmail + ' after:' + formattedYesterday + ' before:' + formattedNow;
+  var start_date = new Date(now);
+  start_date.setDate(now.getDate() - past_day_range); // Set to 24 hours ago
+  var formatted_startdate = Utilities.formatDate(start_date, Session.getScriptTimeZone(), "yyyy/MM/dd");
+  var searchQuery = 'from:' + senderEmail + ' after:' + formatted_startdate;
 
   // Get the alerts from the past day
   var threads = GmailApp.search(searchQuery);
 
   // Go over the emails and get the papers across authors and merge them
   var author2parsed_papers = {}
-  var total_original_papers = 0
+  var total_citing_papers = 0
+  var unique_citing_papers = {}
   var merged_new_articles_body = ''
   var new_article_author_count = 0
   for (var i = 0; i < threads.length; i++) {
@@ -224,17 +231,23 @@ function mergeRecentScholarAlerts() {
       var subject = message.getSubject()
       console.log(subject)
       // Only parse the papers 
-      if (subject.includes('citations to articles') || subject.includes('your articles')){
+      if (subject.includes('citations to articles') || subject.includes('citation to articles') || subject.includes('your articles')){
         message_body = message.getPlainBody(); // This is the plain text body
         titles2parsed_paper_dict = parse_citations_email(message_body)
-        if (subject.includes('citations to articles')){
+        if (subject.includes('citations to articles') || subject.includes('citation to articles')){
           const index = subject.indexOf("by ");
           author_name = subject.slice(index+3).trim()
         } else {
           author_name = 'You'
         }
-        author2parsed_papers[author_name] = titles2parsed_paper_dict
-        total_original_papers += Object.keys(titles2parsed_paper_dict).length
+        // The author can already be present if we collate across multiple days of updates
+        if (author_name in author2parsed_papers){
+          author2parsed_papers[author_name] = Object.assign(author2parsed_papers[author_name], titles2parsed_paper_dict)
+        } else {
+          author2parsed_papers[author_name] = titles2parsed_paper_dict
+        }
+        total_citing_papers += Object.keys(titles2parsed_paper_dict).length
+        unique_citing_papers = Object.assign(unique_citing_papers, titles2parsed_paper_dict)
       }
       else{ // After the above case is setup add code to handle people subscribed to authors and individual papers (just concat all the papers into one email)
         merged_new_articles_body += '<p>' + message.getSubject() + '</p>';
@@ -248,14 +261,20 @@ function mergeRecentScholarAlerts() {
   
   // Count the number subscribed authors per paper and return it in sorted order
   sorted_paper_dicts = collate_author_papers(author2parsed_papers)
-  paper_body = format_citations_email(sorted_paper_dicts)
+  // The script runs into a max email length limit if skimming over multiple days so skip the snippet
+  total_unique_paper_count = Object.keys(unique_citing_papers).length
+  if (total_unique_paper_count > 200){
+    paper_body = format_citations_email(sorted_paper_dicts, true)
+  } else {
+    paper_body = format_citations_email(sorted_paper_dicts, false)
+  }
 
   // Create one merged body for the citations email.
   var pretty_now = Utilities.formatDate(now, Session.getScriptTimeZone(), "EEE MMM dd yyyy");
   var merged_citations_body = '';
   merged_citations_body += '<html><body>';
   merged_citations_body += '<!doctype html><html xmlns="http://www.w3.org/1999/xhtml" xmlns:o="urn:schemas-microsoft-com:office:office"><head><style>body{background-color:#fff}.gse_alrt_title{text-decoration:none}.gse_alrt_title:hover{text-decoration:underline} @media screen and (max-width: 599px) {.gse_alrt_sni br{display:none;}}</style></head>'
-  merged_citations_body += `<h2>Collated ${total_original_papers} citations to ${Object.keys(author2parsed_papers).length} authors into ${sorted_paper_dicts.length}</h2>`;
+  merged_citations_body += `<h2>Collated ${total_citing_papers} citations to ${Object.keys(author2parsed_papers).length} authors into ${sorted_paper_dicts.length}</h2>`;
   merged_citations_body += paper_body
   merged_citations_body += '</body></html>';
   var merged_subject = `Google Scholar Author Citations Digest for ${pretty_now}`;
@@ -270,7 +289,7 @@ function mergeRecentScholarAlerts() {
   }
 
   // Create one merged body for the new articles email.
-  merged_new_articles_email += '<html><body>';
+  merged_new_articles_email = '<html><body>';
   merged_new_articles_email += `<h2>Collated new articles from ${new_article_author_count} authors</h2>`;
   merged_new_articles_email += merged_new_articles_body
   merged_new_articles_email += '</body></html>';
