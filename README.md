@@ -59,3 +59,5 @@ Here is how my Monday trigger is setup.
 </p>
 
 Hope it works! If you run into problems please get in touch with me!
+
+PS: I've never worked with Google Apps Script or Javascript before and I wrote this alongside [Perplexity](https://www.perplexity.ai/)!
