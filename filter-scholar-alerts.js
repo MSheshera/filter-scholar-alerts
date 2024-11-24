@@ -277,6 +277,8 @@ function mergeRecentScholarAlerts() {
     for (var j = 0; j < messages.length; j++) {
       var message = messages[j];
       var subject = message.getSubject()
+      // Mark the message as read
+      message.markRead()
       console.log(subject)
       // Only parse the papers 
       if (subject.includes('citations to articles') || subject.includes('citation to articles') || subject.includes('your articles')){
