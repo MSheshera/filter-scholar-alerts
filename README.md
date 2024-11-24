@@ -6,13 +6,13 @@ I use this script to do two things:
 - De-duplicate the papers citing multiple authors that I am subscribed to and sort them in the order of citation count to my subscribed authors.
 - Collate scholar alerts which are sent willy nilly into one "Digest" email sent to me at a regular interval, for example one Google Scholar Digest every 3 days.
 
-**Before:** My inbox before inundated with Google Scholar Alerts:
+**Before:** My inbox inundated with Google Scholar Alerts multiple times a week:
 <p align="center">
   <img src="./screenshots/before-1.png" width="700" title="My inbox inundated with Google Scholar Alerts">
   <img src="./screenshots/before-2.png" width="700" title="Each email contains the papers citing one subscribed author sometimes with duplication across subscribed authors.">
 </p>
 
-**After:** Emails de-duplicated and sorted into a regular digest that I will hopefully skim:
+**After:** Emails de-duplicated and sorted into a regular digest (that I will hopefully skim):
 <p align="center">
   <img src="./screenshots/after.png" width="700" title="One email de-duplicating and sorting the papers in my alerts">
 </p>
@@ -20,7 +20,7 @@ I use this script to do two things:
 
 ## Usage
 
-You need to setup this script as a Google Apps Script and set it up to run at a frequency you want. Setting up a Google Apps Script is straightforward and I'm copying and modifying the instructions from here: https://developers.google.com/gmail/api/quickstart/apps-script 
+You need to set up this script as a Google Apps Script and set it up to run at a frequency you want. Setting up a Google Apps Script is straightforward and I'm copying and modifying the instructions from here: https://developers.google.com/gmail/api/quickstart/apps-script 
 
 ### Running this manually:
 
