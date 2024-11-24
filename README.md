@@ -34,7 +34,7 @@ I recommend you do this the first time you set this up so that you can authentic
 
 4. Under the left hand side "Services" menu **Add** the GMail API.
 
-5. **Run** the script with the mergeRecentScholarAlerts function selected, when you do this the first time it you will need to review the permissions that the app requires i.e. reading your email and sending you an email. The app runs entirely on your account so there should be no privacy concerns.
+5. **Run** the script with the `mergeRecentScholarAlerts` function selected in the top menu. When you do this the first time it you will need to **review the permissions** that the app requires i.e. reading your email and sending you an email. The app runs entirely on your account so there should be no privacy concerns.
 
 This is what it looks like on my account:
 <p align="center">
@@ -47,10 +47,12 @@ Next we will setup a Trigger to run this script automatically on a schedule.
 
 1. From the left hand menu navigate to **Triggers**.
 
-2. Click on "Add Trigger". Then fill out how frequently you want the script to run. See the values for "Choose which function to run" and "Choose which deployment should run" that I set up below - you should use the same. You can setup the script to run at a different time than me though - because the script looks for alerts in the past 3 days I have two triggers. One to run on Monday between 3-4 am and another to run on Thursday 3-4 am (you need to create multiple triggers if you want this to run multiple times a week).
+2. Click on **Add Trigger**. Then fill out the options here.
+	1. See the values for "Choose which function to run" and "Choose which deployment should run" that I set up below - you should use the same. 
+	2. You can setup the script to run at a different time than me though - because the script looks for alerts in the past 3 days I have two triggers. One to run on Monday between 3-4 am and another to run on Thursday 3-4 am (you need to create multiple triggers if you want this to run multiple times a week).
 
 Here is how my Monday trigger is setup.
 <p align="center">
-  <img src="./screenshots/trigger-how-to.png" width="700" title="Running the script as a Google Apps Script">
+  <img src="./screenshots/trigger-how-to.png" width="700" title="Setting up triggers to run the script automatically.">
 </p>
 
