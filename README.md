@@ -26,7 +26,7 @@ You need to set up this script as a Google Apps Script and set it up to run at a
 
 I recommend you do this the first time you set this up so that you can authenticate the App.
 
-1. Create a new script by going to script.google.com/create.
+1. Create a new script by going to script.google.com/create
 
 2. Copy the code in `filter-scholar-alerts.js` into the script editor.
 
@@ -34,7 +34,7 @@ I recommend you do this the first time you set this up so that you can authentic
 
 4. Under the left hand side "Services" menu **Add** the GMail API.
 
-5. **Run** the script with the `mergeRecentScholarAlerts` function selected in the top menu. When you do this the first time it you will need to **review the permissions** that the app requires i.e. reading your email and sending you an email. The app runs entirely on your account so there should be no privacy concerns.
+5. **Run** the script with the `mergeRecentScholarAlerts` function selected in the top menu. When you do this the first time it you will need to **review the permissions** that the app requires i.e. reading your email and sending you an email. The app runs entirely on your account so there should be no privacy concerns. Also make sure it is on the account where you receive your Google Scholar Alerts.
 
 This is what it looks like on my account:
 <p align="center">
