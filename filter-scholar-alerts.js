@@ -213,12 +213,10 @@ function mergeRecentScholarAlerts() {
   var threads = GmailApp.search(searchQuery);
 
   // Go over the emails and get the papers across authors and merge them
-  var mergedBody = '';
-  var pretty_now = Utilities.formatDate(now, Session.getScriptTimeZone(), "EEE MMM dd yyyy");
-  mergedBody += '<html><body>';
-  mergedBody += '<!doctype html><html xmlns="http://www.w3.org/1999/xhtml" xmlns:o="urn:schemas-microsoft-com:office:office"><head><style>body{background-color:#fff}.gse_alrt_title{text-decoration:none}.gse_alrt_title:hover{text-decoration:underline} @media screen and (max-width: 599px) {.gse_alrt_sni br{display:none;}}</style></head>'
-  mergedBody += `<h1>Google Scholar Author Citations Digest for ${pretty_now}</h1>`;
   var author2parsed_papers = {}
+  var total_original_papers = 0
+  var merged_new_articles_body = ''
+  var new_article_author_count = 0
   for (var i = 0; i < threads.length; i++) {
     var messages = threads[i].getMessages();
     for (var j = 0; j < messages.length; j++) {
@@ -226,34 +224,60 @@ function mergeRecentScholarAlerts() {
       var subject = message.getSubject()
       console.log(subject)
       // Only parse the papers 
-      if (subject.includes('citations to articles')){
+      if (subject.includes('citations to articles') || subject.includes('your articles')){
         message_body = message.getPlainBody(); // This is the plain text body
-        parsed_paper_dicts = parse_citations_email(message_body)
-        const index = subject.indexOf("by ");
-        author_name = subject.slice(index+3).trim()
-        author2parsed_papers[author_name] = parsed_paper_dicts
+        titles2parsed_paper_dict = parse_citations_email(message_body)
+        if (subject.includes('citations to articles')){
+          const index = subject.indexOf("by ");
+          author_name = subject.slice(index+3).trim()
+        } else {
+          author_name = 'You'
+        }
+        author2parsed_papers[author_name] = titles2parsed_paper_dict
+        total_original_papers += Object.keys(titles2parsed_paper_dict).length
       }
-      else{ // After the above case is setup add code to handle people subscribed to authors and individual papers (mostly just concat all the papers into one email)
-        continue
+      else{ // After the above case is setup add code to handle people subscribed to authors and individual papers (just concat all the papers into one email)
+        merged_new_articles_body += '<p>' + message.getSubject() + '</p>';
+        message_body = message.getBody();
+        merged_new_articles_body += '<div>' + message_body + '</div>';
+        merged_new_articles_body += '<hr>';
+        new_article_author_count += 1
       }
-      // mergedBody += '<h3>From: ' + message.getFrom() + '</h3>';
-      // mergedBody += '<p>Date: ' + message.getDate() + '</p>';
-      // mergedBody += '<p>Subject: ' + message.getSubject() + '</p>';
-      //message_body = message.getPlainBody(); // This is the plain text body
-      // mergedBody += '<div>' + message_body + '</div>';
-      // mergedBody += '<hr>';
     }
   }
   
   // Count the number subscribed authors per paper and return it in sorted order
   sorted_paper_dicts = collate_author_papers(author2parsed_papers)
   paper_body = format_citations_email(sorted_paper_dicts)
-  mergedBody += paper_body
-  mergedBody += '</body></html>';
-  var merged_subject = `Google Scholar Alerts: Authors Citations Digest for ${pretty_now}`;
-  if (mergedBody !== '<html><body></body></html>') {
+
+  // Create one merged body for the citations email.
+  var pretty_now = Utilities.formatDate(now, Session.getScriptTimeZone(), "EEE MMM dd yyyy");
+  var merged_citations_body = '';
+  merged_citations_body += '<html><body>';
+  merged_citations_body += '<!doctype html><html xmlns="http://www.w3.org/1999/xhtml" xmlns:o="urn:schemas-microsoft-com:office:office"><head><style>body{background-color:#fff}.gse_alrt_title{text-decoration:none}.gse_alrt_title:hover{text-decoration:underline} @media screen and (max-width: 599px) {.gse_alrt_sni br{display:none;}}</style></head>'
+  merged_citations_body += `<h2>Collated ${total_original_papers} citations to ${Object.keys(author2parsed_papers).length} authors into ${sorted_paper_dicts.length}</h2>`;
+  merged_citations_body += paper_body
+  merged_citations_body += '</body></html>';
+  var merged_subject = `Google Scholar Author Citations Digest for ${pretty_now}`;
+  if (merged_citations_body !== '<html><body></body></html>') {
     GmailApp.sendEmail(Session.getActiveUser().getEmail(), merged_subject, '', {
-      htmlBody: mergedBody
+      htmlBody: merged_citations_body
+    });
+    // GmailApp.sendEmail(Session.getActiveUser().getEmail(), merged_subject, mergedBody);
+    Logger.log('Merged email with recent alerts sent successfully.');
+  } else {
+    Logger.log('No matching emails found.');
+  }
+
+  // Create one merged body for the new articles email.
+  merged_new_articles_email += '<html><body>';
+  merged_new_articles_email += `<h2>Collated new articles from ${new_article_author_count} authors</h2>`;
+  merged_new_articles_email += merged_new_articles_body
+  merged_new_articles_email += '</body></html>';
+  var merged_subject = `Google Scholar New Articles Digest for ${pretty_now}`;
+  if (merged_new_articles_email !== '<html><body></body></html>') {
+    GmailApp.sendEmail(Session.getActiveUser().getEmail(), merged_subject, '', {
+      htmlBody: merged_new_articles_email
     });
     // GmailApp.sendEmail(Session.getActiveUser().getEmail(), merged_subject, mergedBody);
     Logger.log('Merged email with recent alerts sent successfully.');
