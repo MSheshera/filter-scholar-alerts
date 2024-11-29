@@ -1,3 +1,15 @@
+/*Config for the script*/
+global_config = {
+  // How far back each digest should look
+  'past_day_range': 3,
+  // How many papers to include in one part of the digest, more than 200 tends to hit length limits of emails
+  'papers_per_merged_email': 200,
+  // Search for the sender of the email
+  'senderEmail': 'scholaralerts-noreply@google.com',
+  // After sending the digest should the email get marked as unread
+  'mark_as_unread': true
+}
+
 /*Parse the body for the email which cites papers of a specific author*/
 function parse_citations_email(plainBody) {
   var lines = plainBody.split(/\r?\n/);
@@ -254,15 +266,12 @@ function batch_send_citation_email(sorted_paper_dicts, total_citing_papers, tota
 }
 
 function mergeRecentScholarAlerts() {
-  // COnstruct a search query for emails from scholar alerts in the past 24 hours
-  var past_day_range = 3
-  var papers_per_merged_email = 200
-  var senderEmail = 'scholaralerts-noreply@google.com';
+  // Construct a search query for emails from scholar alerts in the past_day_range
   var now = new Date();
   var start_date = new Date(now);
-  start_date.setDate(now.getDate() - past_day_range); // Set to past day range
+  start_date.setDate(now.getDate() - global_config.past_day_range); // Set to past day range
   var formatted_startdate = Utilities.formatDate(start_date, Session.getScriptTimeZone(), "yyyy/MM/dd");
-  var searchQuery = 'from:' + senderEmail + ' after:' + formatted_startdate;
+  var searchQuery = 'from:' + global_config.senderEmail + ' after:' + formatted_startdate;
 
   // Get the alerts from the past day
   var threads = GmailApp.search(searchQuery);
@@ -278,7 +287,9 @@ function mergeRecentScholarAlerts() {
       var message = messages[j];
       var subject = message.getSubject()
       // Mark the message as read
-      message.markRead()
+      if (global_config.mark_as_unread){
+        message.markRead()
+      }
       console.log(subject)
       // Only parse the papers 
       if (subject.includes('citations to articles') || subject.includes('citation to articles') || subject.includes('your articles')){
@@ -317,10 +328,10 @@ function mergeRecentScholarAlerts() {
   total_unique_papers = sorted_paper_dicts.length
 
   // If the number of papers is large then batch and send, else just send
-  if (total_unique_papers <= papers_per_merged_email){
+  if (total_unique_papers <= global_config.papers_per_merged_email){
     send_citation_email(sorted_paper_dicts, total_citing_papers, total_authors, total_unique_papers, 0)
   } else {
-    batch_send_citation_email(sorted_paper_dicts, total_citing_papers, total_authors, total_unique_papers, papers_per_merged_email)
+    batch_send_citation_email(sorted_paper_dicts, total_citing_papers, total_authors, total_unique_papers, global_config.papers_per_merged_email)
   }
   
   // Create one merged body for the new articles email.
