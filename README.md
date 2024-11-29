@@ -1,10 +1,10 @@
-This is a script to collate the papers you receive in your subscribed Google Scholar Alerts. I'm hoping this will prevent me being overwhelmed by the emails I receive from Google Scholar and actually skim the latest papers from authors I've subscribed to.
+This is a script to create a simple "Digest" for the papers you receive in your subscribed Google Scholar Alerts. I'm wrote this to prevent the scholar alerts from overwhelming me and for making sure that I actually skim the latest papers from authors I've subscribed to. Hope it helps you too!
 
 ## Introduction
 
-I use this script to do two things:
-- De-duplicate the papers citing multiple authors that I am subscribed to and sort them in the order of citation count to my subscribed authors.
-- Collate scholar alerts which are sent willy nilly into one "Digest" email sent to me at a regular interval, for example one Google Scholar Digest every 3 days.
+I use this script + the Apps Script Triggers to do two things:
+- **De-duplicate and sort citations:** De-duplicate the papers citing multiple authors that I am subscribed to and sort them in the order of citation count to my subscribed authors.
+- **Trigger the script to get a regularly timed digest:** Collate scholar alerts which are sent willy nilly into one "Digest" email sent to me at a regular interval, for example one Google Scholar Digest every 3 days.
 
 **Before:** My inbox inundated with Google Scholar Alerts multiple times a week:
 <p align="center">
@@ -12,7 +12,7 @@ I use this script to do two things:
   <img src="./screenshots/before-2.png" width="700" title="Each email contains the papers citing one subscribed author sometimes with duplication across subscribed authors.">
 </p>
 
-**After:** Emails de-duplicated and sorted into a regular digest (that I will hopefully skim):
+**After:** Emails with de-duplicated and sorted citations delivered as a regular digest:
 <p align="center">
   <img src="./screenshots/after.png" width="700" title="One email de-duplicating and sorting the papers in my alerts">
 </p>
@@ -20,11 +20,11 @@ I use this script to do two things:
 
 ## Usage
 
-You need to set up this script as a Google Apps Script and set it up to run at a frequency you want. Setting up a Google Apps Script is straightforward and I'm copying and modifying the instructions from here: https://developers.google.com/gmail/api/quickstart/apps-script 
+You need to set up this script as a Google Apps Script and set up the Trigger to run at a frequency you want. Setting up a Google Apps Script is straightforward and I'm copying and modifying the instructions from here: https://developers.google.com/gmail/api/quickstart/apps-script 
 
-### Running this manually:
+### Run this manually first:
 
-I recommend you do this the first time you set this up so that you can authenticate the App.
+I recommend you do this the first time you set this up so that you can authenticate the scripts for use with your GMail.
 
 1. Create a new script by going to https://script.google.com/create
 
@@ -43,7 +43,7 @@ This is what it looks like on my account:
 
 ### Running this automatically with a trigger
 
-Next we will setup a Trigger to run this script automatically on a schedule.
+Next set up a Trigger to run this script automatically on a schedule.
 
 1. From the left hand menu navigate to **Triggers**.
 
@@ -58,6 +58,8 @@ Here is how my Monday trigger is setup.
   <img src="./screenshots/trigger-how-to.png" width="700" title="Setting up triggers to run the script automatically.">
 </p>
 
-Hope it works! If you run into problems please get in touch with me!
+Hope it works! If you run into problems please get in touch with me.
 
-PS: I've never worked with Google Apps Script or Javascript before and I wrote this alongside [Perplexity](https://www.perplexity.ai/)!
+## TODOs
+
+1. At present the script merges all "New Article" emails into one email. In future the script will de-duplicate and sort these emails too.
