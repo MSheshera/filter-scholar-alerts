@@ -41,7 +41,7 @@ This is what it looks like on my account:
   <img src="./screenshots/script-how-to.png" width="700" title="Running the script as a Google Apps Script">
 </p>
 
-### Running this automatically with a trigger
+### Then set up triggers to run this automatically:
 
 Next set up a Trigger to run this script automatically on a schedule.
 
